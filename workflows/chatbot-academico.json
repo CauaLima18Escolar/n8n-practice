@@ -1,0 +1,354 @@
+{
+  "name": "Chatbot - WAHA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -848,
+        -192
+      ],
+      "id": "b13d7df3-da5c-4e4e-824a-b98165e5bf1f",
+      "name": "Webhook",
+      "webhookId": "439847b2-beff-4a94-94fe-685107e0dd55"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "45c3fd36-c9b6-427b-bda2-2c45c0f2507e",
+              "name": "session",
+              "value": "={{ $json.body.session }}",
+              "type": "string"
+            },
+            {
+              "id": "4e084a0c-49a6-4f12-8ca2-0443bef08c1f",
+              "name": "message",
+              "value": "={{ $json.body.payload._data.Message.extendedTextMessage.text }}",
+              "type": "string"
+            },
+            {
+              "id": "16ef9d95-d7c3-458b-b347-211febbd399c",
+              "name": "pushName",
+              "value": "={{ $json.body.payload._data.Info.PushName }}",
+              "type": "string"
+            },
+            {
+              "id": "d28ff36b-2277-4be1-8fca-518a59840b08",
+              "name": "chat_id",
+              "value": "={{ $json.body.payload.from }}",
+              "type": "string"
+            },
+            {
+              "id": "559e8d2b-4f1f-4397-9186-ae9206901c6c",
+              "name": "payload_id",
+              "value": "={{ $json.body.payload.id }}",
+              "type": "string"
+            },
+            {
+              "id": "7779e5a1-a9ba-4809-b958-d248172b5927",
+              "name": "event",
+              "value": "={{ $json.body.event }}",
+              "type": "string"
+            },
+            {
+              "id": "1af2d0d4-f40a-442f-8b4c-3a87bc970260",
+              "name": "isMencionado",
+              "value": "={{ $json.body.payload._data.Message.extendedTextMessage.contextInfo.mentionedJID.includes($json.body.me.lid) }}",
+              "type": "string"
+            },
+            {
+              "id": "7a88f034-820d-4261-9a35-cb5e2eef3aee",
+              "name": "isReply",
+              "value": "={{ $json.body.payload.replyTo.participant.includes($json.body.me.lid) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -608,
+        -192
+      ],
+      "id": "e42bf5d9-2c19-45f1-8846-299ba30948f3",
+      "name": "Dados"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Dados').item.json.message }}",
+        "options": {
+          "systemMessage": "Você é um ajudante acadêmico. Com base nos pedidos do usuário, acesse a fonte de dados do Google Sheets disponível sobre a instituição.\n\nNo Sheets disponível existem três páginas: \"Contato de Professores\", \"Eventos\" \"Cursos\" e \"Calendário Acadêmico\".\n\nObtenha os dados de acordo com o que o usuário pedir. Se nada for encontrado, retorne uma mensagem sobre essa falta de dados.\n\nFaça uma formatação de resposta amigável para o whatsapp. Pode utilizar emojis para parecer mais humanizado."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        -208
+      ],
+      "id": "0df8456a-cc32-4432-bd4e-a7591ed32469",
+      "name": "Agente"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        112,
+        32
+      ],
+      "id": "105f9246-8e14-4eb1-954b-13b6d39bfcfb",
+      "name": "Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "OnPXHw0Oii99cW06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "={{ $('Dados').item.json.session }}",
+        "chatId": "={{ $('Dados').item.json.chat_id }}",
+        "reply_to": "={{ $('Dados').item.json.payload_id }}",
+        "text": "={{ $json.output }}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-waha.WAHA",
+      "typeVersion": 202411,
+      "position": [
+        544,
+        -208
+      ],
+      "id": "8a3e07bf-23fa-4a00-ab1d-5bce9800d992",
+      "name": "Enviar Mensagem",
+      "credentials": {
+        "wahaApi": {
+          "id": "knRVnrUw9NrlK4NF",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Obtenha os dados necessários de acordo com o que o usuário requisitou. Existem 4 páginas nessa planilha: \"Contato de Professores\", \"Eventos\", \"Cursos\" e \"Calendário Acadêmico\".",
+        "documentId": {
+          "__rl": true,
+          "value": "1j6fyFt2w0h_4h2-Uua5GmaT2-JcEj3Mcz76A3cvvCuE",
+          "mode": "list",
+          "cachedResultName": "Fonte de Dados Institucional (n8n)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j6fyFt2w0h_4h2-Uua5GmaT2-JcEj3Mcz76A3cvvCuE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Sheet', ``, 'string') }}",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        416,
+        32
+      ],
+      "id": "ceb307de-936a-465a-910a-6723ac94ece2",
+      "name": "Fonte de dados (Panilha Institucional)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "iPPIPmatmPHtVSmK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Start Typing",
+        "chatId": "={{ $json.chat_id }}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-waha.WAHA",
+      "typeVersion": 202411,
+      "position": [
+        -112,
+        -208
+      ],
+      "id": "cda707c2-73fb-46df-9c2c-7256878a65d7",
+      "name": "Digitando...",
+      "credentials": {
+        "wahaApi": {
+          "id": "knRVnrUw9NrlK4NF",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1039ec36-2d0b-443b-8a8f-25ebf96ddab3",
+              "leftValue": "={{ $json.isMencionado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -400,
+        -192
+      ],
+      "id": "4d6fc781-e873-4536-926c-76c22a5411c4",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        -16
+      ],
+      "id": "87b820dd-0ecf-414e-8688-613f84a12d82",
+      "name": "Finalizar"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente": {
+      "main": [
+        [
+          {
+            "node": "Enviar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fonte de dados (Panilha Institucional)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Mensagem": {
+      "main": [
+        []
+      ]
+    },
+    "Digitando...": {
+      "main": [
+        [
+          {
+            "node": "Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Digitando...",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d723c51d-b038-42ea-864f-5a181cd44987",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fa5b5bfafaf1d727fb5b0cf2bca6c2b2902838942d2ade10910315e0c2428c88"
+  },
+  "id": "RWfScqdgoE0ADx1P",
+  "tags": []
+}
