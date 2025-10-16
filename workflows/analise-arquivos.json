@@ -1,0 +1,506 @@
+{
+  "name": "Análise de arquivos",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Conteúdo do anexo: {{ $json.conteudo_anexo }}, Ação: {{ $('Formatação Inicial').item.json.material }}",
+        "options": {
+          "systemMessage": "Você é um assistente de automações para estudos.  \nReceberá um conteúdo de um anexo (em texto) e uma ação escolhida pelo usuário.  \n\nAÇÕES POSSÍVEIS:  \n\n1. RESUMIR O CONTEÚDO  \n- Extraia e destaque apenas os pontos mais importantes.  \n- Estruture em tópicos organizados e claros.  \n\n2. CRIAR EXERCÍCIOS COM GABARITO E RESOLUÇÕES DETALHADAS  \n- Gere de 7 a 10 exercícios relacionados ao conteúdo, com níveis de dificuldade.  \n- Sempre coloque o gabarito e a resolução explicada por último, numerando as questões.    \n\nREGRAS DE SAÍDA OBRIGATÓRIAS:  \n- Sempre gere uma versão HTML da resposta para ser utilizada no corpo do conteúdo de um email. Mantenha um HTML organizado."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        368
+      ],
+      "id": "c15f44f0-701f-4293-aea5-021273417393",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        992,
+        640
+      ],
+      "id": "2ba54487-4543-41f4-8e1e-9ac69d25f6f2",
+      "name": "Wikipedia"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $binary.data.fileExtension }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b93af363-5cc3-4dc2-9755-1e4eb12e6d3f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PDF"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a978fb94-66e1-4d43-87ed-00a9567996cc",
+                    "leftValue": "={{ $binary.data.fileExtension }}",
+                    "rightValue": "docx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DOCX"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        16,
+        240
+      ],
+      "id": "6a222e3f-a98d-458e-b20c-f1707364e5f3",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.anexo.split(\"id=\")[1] }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        512,
+        -16
+      ],
+      "id": "44defeab-6869-44b3-b7f7-6e397e68d125",
+      "name": "Download do Arquivo",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "0bavMw2hUBjoTZdp",
+          "name": "Google Drive account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a5e01f6a-48d9-43f3-b402-f788721ff362",
+              "name": "email",
+              "value": "={{ $json['Endereço de e-mail'] }}",
+              "type": "string"
+            },
+            {
+              "id": "72fcd7da-1d1d-4853-bccf-803a834a1b19",
+              "name": "anexo",
+              "value": "={{ $json['Anexe seu arquivo ou imagem da atividade (PDF ou DOCX)'] }}",
+              "type": "string"
+            },
+            {
+              "id": "a5077832-a8e0-45a4-94c6-d941a807058d",
+              "name": "material",
+              "value": "={{ $json['Indique o material que deseja receber em seu e-mail:'] }}",
+              "type": "string"
+            },
+            {
+              "id": "ede0a05e-6da4-4256-9b45-67803df5910d",
+              "name": "data_hora",
+              "value": "={{ $json['Carimbo de data/hora'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        -16
+      ],
+      "id": "09903ce7-f195-42c8-b1a2-5e3a0cb7dfdb",
+      "name": "Formatação Inicial"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1rKQw2Zr3_gpu0O56mabh8njC1fi67F32w7CHUKQsh94",
+          "mode": "list",
+          "cachedResultName": "Meu Apoio nos Estudos (respostas)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rKQw2Zr3_gpu0O56mabh8njC1fi67F32w7CHUKQsh94/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1815927145,
+          "mode": "list",
+          "cachedResultName": "Respostas ao formulário 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rKQw2Zr3_gpu0O56mabh8njC1fi67F32w7CHUKQsh94/edit#gid=1815927145"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -16
+      ],
+      "id": "1f5cd680-0b95-410b-9869-e2100a7a093d",
+      "name": "Gatilho no Google Sheets",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "SW27MUbWIWqn77PG",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        288,
+        224
+      ],
+      "id": "217539be-49d0-48b9-95cf-d7485bc40139",
+      "name": "Extrair conteúdo do PDF"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "99b70e21-cb78-4dc1-b00b-ad8bcb2276c7",
+              "name": "conteudo_anexo",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        528,
+        224
+      ],
+      "id": "20ec1c90-1628-434c-92f0-73dea97fecd4",
+      "name": "Padronização Body PDF"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "97759c3f-0e99-419f-b526-8e34d263d972",
+              "name": "conteudo_anexo",
+              "value": "={{ $json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        528,
+        496
+      ],
+      "id": "c895b3d5-3dde-4094-b94f-b71128f0c505",
+      "name": "Padronização Body Doc"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        848,
+        640
+      ],
+      "id": "c0492a80-1896-48ee-aaee-1f2bc7c48086",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "OnPXHw0Oii99cW06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Formatação Inicial').item.json.email }}",
+        "subject": "=Meu Apoio nos Estudos - Material ({{ $('Formatação Inicial').item.json.material }}) :D",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1248,
+        368
+      ],
+      "id": "109cf333-6f28-4fbf-94cf-1a7b85068b09",
+      "name": "Email para o Usuário",
+      "webhookId": "17ac5ca9-e3af-432c-8272-ff96db15646b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7UGDfbRomtQDGcOp",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v2/files/{{ $('Formatação Inicial').item.json.anexo.split(\"id=\")[1] }}/copy?convert=true&supportsAllDrives=true",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        496
+      ],
+      "id": "ce582a3f-85c7-4037-aed5-6d47a84b951d",
+      "name": "Converter para DOCX",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "0bavMw2hUBjoTZdp",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        288,
+        496
+      ],
+      "id": "3c5f9cea-41d8-4d79-bb14-091051cd5a94",
+      "name": "Recuperar arquivo DOCX",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "9fEvuM7umWmC4fgr",
+          "name": "Google Docs account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wikipedia": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Extrair conteúdo do PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Converter para DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Email para o Usuário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download do Arquivo": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatação Inicial": {
+      "main": [
+        [
+          {
+            "node": "Download do Arquivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gatilho no Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Formatação Inicial",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair conteúdo do PDF": {
+      "main": [
+        [
+          {
+            "node": "Padronização Body PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Padronização Body PDF": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Padronização Body Doc": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Converter para DOCX": {
+      "main": [
+        [
+          {
+            "node": "Recuperar arquivo DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperar arquivo DOCX": {
+      "main": [
+        [
+          {
+            "node": "Padronização Body Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "521c801e-49f8-4238-b83c-ef40aa30a3d1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fa5b5bfafaf1d727fb5b0cf2bca6c2b2902838942d2ade10910315e0c2428c88"
+  },
+  "id": "PsF3lJ4MpziQVZ2r",
+  "tags": []
+}
